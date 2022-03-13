@@ -36,7 +36,7 @@ logger.addHandler(logging.StreamHandler())
 def send_message(bot, message):
     """Отправляет сообщение о статусе работы."""
     logger.info(f'Отправляю сообщение:{message}')
-    send = bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+    bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
 
 
 def get_api_answer(current_timestamp):
@@ -77,7 +77,8 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """Функция проверяет доступность окружения, необходимое для работы программы."""
+    """Функция проверяет доступность окружения,
+       необходимое для работы программы."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
 
