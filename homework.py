@@ -44,7 +44,9 @@ def get_api_answer(current_timestamp):
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
-        homework_statuses = requests.get(ENDPOINT, headers=HEADERS, params=params)
+        homework_statuses = requests.get(ENDPOINT,
+                                         headers=HEADERS,
+                                         params=params)
         logger.info('Сервер работает')
         if homework_statuses.status_code != HTTPStatus.OK:
             raise PracticumNotWork('Сервер не работает')
@@ -106,8 +108,8 @@ def main():
             try:
                 homework = check_response(response)
                 send_message(bot, parse_status(homework[0]))
-            except:
-                logging.info('Домашней работы нет')
+            except Exception as error:
+                logging.info(f'Домашней работы нет: {error}')
 
             current_timestamp = response.get('current_date')
             time.sleep(RETRY_TIME)
