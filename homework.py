@@ -104,8 +104,8 @@ def main():
         try:
             response = get_api_answer(current_timestamp)
             try:
-                homework = check_response(response.get('homeworks')[0])
-                send_message(bot, parse_status(homework))
+                homework = check_response(response)
+                send_message(bot, parse_status(homework[0]))
             except:
                 logging.info('Домашней работы нет')
 
