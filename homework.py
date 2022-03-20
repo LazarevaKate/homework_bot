@@ -1,42 +1,31 @@
 import logging
-import os
 import sys
 import time
 from http import HTTPStatus
 
 import requests
 import telegram
-from dotenv import load_dotenv
+from telegram.error import NetworkError
 
-from exceptions import (TelegramException, PracticumNotWork,
-                        TokensNotFound)
+from config import (
+    TELEGRAM_CHAT_ID, ENDPOINT, HEADERS,
+    HOMEWORK_STATUSES, PRACTICUM_TOKEN,
+    TELEGRAM_TOKEN, RETRY_TIME,
+)
+from exceptions import PracticumNotWork, TokensNotFound
 
-load_dotenv()
-
-PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
-
-RETRY_TIME = 600
-ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
-HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
-
-HOMEWORK_STATUSES = {
-    'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
-    'reviewing': 'Работа взята на проверку ревьюером.',
-    'rejected': 'Работа проверена: у ревьюера есть замечания.'
-}
 
 logger = logging.getLogger(__name__)
 
 
 def send_message(bot, message):
     """Отправляет сообщение о статусе работы."""
-    logger.info(f'Отправляю сообщение:{message}')
-    send = bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-    if not send:
-        logger.error('Ошибка Telegram, сообщение не отправлено')
-        raise TelegramException('Не могу отправить сообщение')
+    try:
+        logger.info(f'Отправляю сообщение:{message}')
+        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+    except Exception as error:
+        logger.error(f'{error}: Telegram, сообщение не отправлено')
+        raise NetworkError('Не могу отправить сообщение')
 
 
 def get_api_answer(current_timestamp):
@@ -44,12 +33,16 @@ def get_api_answer(current_timestamp):
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
-        homework_statuses = requests.get(ENDPOINT,
-                                         headers=HEADERS,
-                                         params=params)
+        homework_statuses = requests.get(
+            ENDPOINT,
+            headers=HEADERS,
+            params=params
+        )
         logger.info('Сервер работает')
         if homework_statuses.status_code != HTTPStatus.OK:
             raise PracticumNotWork('Сервер не работает')
+        elif homework_statuses.status_code == HTTPStatus.NOT_FOUND:
+            raise TokensNotFound('Какая-то проблема со стороны клиента')
     except Exception as error:
         logger.error(error)
         raise PracticumNotWork('Ошибка сервера')
@@ -62,11 +55,8 @@ def check_response(response):
         logger.error('Это не словарь')
         raise TypeError('API возвращает не словарь')
     homeworks = response.get('homeworks')
-    if 'current_date' not in response:
-        logger.error('Not found key current_date')
-        raise KeyError('Ключи отсутсвуют')
-    elif 'homeworks' not in response:
-        logger.error('Not found key homeworks')
+    if 'current_date' and 'homeworks' not in response:
+        logger.error('Not found keys')
         raise KeyError('Ключи отсутсвуют')
     elif not isinstance(response['homeworks'], list):
         raise TypeError('API возвращает не список')
@@ -82,8 +72,7 @@ def parse_status(homework):
     if homework_status not in HOMEWORK_STATUSES:
         logger.error(f'Неизвестный стаутс:{homework_status}')
         raise KeyError
-    else:
-        verdict = HOMEWORK_STATUSES[homework_status]
+    verdict = HOMEWORK_STATUSES[homework_status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
@@ -112,12 +101,12 @@ def main():
                 logging.info(f'Домашней работы нет: {error}')
 
             current_timestamp = response.get('current_date')
-            time.sleep(RETRY_TIME)
 
         except Exception as error:
             message = f'Сбой в работе программы, {error}'
             logging.error(message)
             send_message(bot, message)
+        finally:
             time.sleep(RETRY_TIME)
 
 
