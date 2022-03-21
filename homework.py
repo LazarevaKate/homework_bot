@@ -5,13 +5,14 @@ from http import HTTPStatus
 
 import requests
 import telegram
+from telegram import TelegramError
 
 from config import (
     TELEGRAM_CHAT_ID, ENDPOINT, HEADERS,
     HOMEWORK_STATUSES, PRACTICUM_TOKEN,
     TELEGRAM_TOKEN, RETRY_TIME,
 )
-from exceptions import PracticumNotWork, TokensNotFound, TelegramException
+from exceptions import PracticumNotWork, TokensNotFound, TelegramException, AnswerStatusIsNotOK
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ def send_message(bot, message):
     try:
         logger.info(f'Отправляю сообщение:{message}')
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-    except telegram.error.NetworkError:
+    except TelegramError:
         logger.error('Telegram, сообщение не отправлено')
         raise TelegramException('Не могу отправить сообщение')
 
@@ -38,7 +39,7 @@ def get_api_answer(current_timestamp):
         )
         logger.info('Сервер работает')
         if homework_statuses.status_code != HTTPStatus.OK:
-            raise PracticumNotWork('Код ответа отличается от 200')
+            raise AnswerStatusIsNotOK('Код ответа отличается от 200')
         elif homework_statuses.status_code == HTTPStatus.NOT_FOUND:
             raise PracticumNotWork('Ошибка при запросе к API')
     except Exception as error:
