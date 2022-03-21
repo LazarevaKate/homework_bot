@@ -94,8 +94,9 @@ def main():
         try:
             response = get_api_answer(current_timestamp)
             homework = check_response(response)
-            send_message(bot, parse_status(homework[0]))
-            current_timestamp = response.get('current_date')
+            if isinstance(homework, list) and homework:
+                send_message(bot, parse_status(homework[0]))
+                current_timestamp = response.get('current_date')
         except Exception as error:
             message = f'Сбой в работе программы, {error}'
             logging.error(message)
