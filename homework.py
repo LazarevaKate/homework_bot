@@ -94,7 +94,7 @@ def main():
         try:
             response = get_api_answer(current_timestamp)
             homework = check_response(response)
-            if homework != homework[0].get('status'):
+            if not homework:
                 logging.info('Нет домашней работы')
             else:
                 send_message(bot, parse_status(homework[0]))
@@ -103,7 +103,6 @@ def main():
             message = f'Сбой в работе программы, {error}'
             logging.error(message)
             send_message(bot, message)
-        finally:
             time.sleep(RETRY_TIME)
 
 
