@@ -12,7 +12,9 @@ from config import (
     HOMEWORK_STATUSES, PRACTICUM_TOKEN,
     TELEGRAM_TOKEN, RETRY_TIME,
 )
-from exceptions import PracticumNotWork, TokensNotFound, TelegramException, AnswerStatusIsNotOK
+from exceptions import (
+    PracticumNotWork, TokensNotFound, TelegramException, AnswerStatusIsNotOK
+)
 
 logger = logging.getLogger(__name__)
 
