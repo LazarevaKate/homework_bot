@@ -5,7 +5,6 @@ from http import HTTPStatus
 
 import requests
 import telegram
-from telegram.error import NetworkError
 
 from config import (
     TELEGRAM_CHAT_ID, ENDPOINT, HEADERS,
