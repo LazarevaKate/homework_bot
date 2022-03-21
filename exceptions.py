@@ -1,3 +1,7 @@
+class TelegramException(Exception):
+    pass
+
+
 class PracticumNotWork(Exception):
     pass
 

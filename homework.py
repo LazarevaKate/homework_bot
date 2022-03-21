@@ -12,8 +12,7 @@ from config import (
     HOMEWORK_STATUSES, PRACTICUM_TOKEN,
     TELEGRAM_TOKEN, RETRY_TIME,
 )
-from exceptions import PracticumNotWork, TokensNotFound
-
+from exceptions import PracticumNotWork, TokensNotFound, TelegramException
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +22,9 @@ def send_message(bot, message):
     try:
         logger.info(f'Отправляю сообщение:{message}')
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-    except Exception as error:
-        logger.error(f'{error}: Telegram, сообщение не отправлено')
-        raise NetworkError('Не могу отправить сообщение')
+    except telegram.error.NetworkError:
+        logger.error('Telegram, сообщение не отправлено')
+        raise TelegramException('Не могу отправить сообщение')
 
 
 def get_api_answer(current_timestamp):
@@ -40,9 +39,9 @@ def get_api_answer(current_timestamp):
         )
         logger.info('Сервер работает')
         if homework_statuses.status_code != HTTPStatus.OK:
-            raise PracticumNotWork('Сервер не работает')
+            raise PracticumNotWork('Код ответа отличается от 200')
         elif homework_statuses.status_code == HTTPStatus.NOT_FOUND:
-            raise TokensNotFound('Какая-то проблема со стороны клиента')
+            raise PracticumNotWork('Ошибка при запросе к API')
     except Exception as error:
         logger.error(error)
         raise PracticumNotWork('Ошибка сервера')
@@ -94,14 +93,9 @@ def main():
     while True:
         try:
             response = get_api_answer(current_timestamp)
-            try:
-                homework = check_response(response)
-                send_message(bot, parse_status(homework[0]))
-            except Exception as error:
-                logging.info(f'Домашней работы нет: {error}')
-
+            homework = check_response(response)
+            send_message(bot, parse_status(homework[0]))
             current_timestamp = response.get('current_date')
-
         except Exception as error:
             message = f'Сбой в работе программы, {error}'
             logging.error(message)
