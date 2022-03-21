@@ -94,7 +94,9 @@ def main():
         try:
             response = get_api_answer(current_timestamp)
             homework = check_response(response)
-            if isinstance(homework, list) and homework:
+            if homework != homework[0].get('status'):
+                logging.info('Нет домашней работы')
+            else:
                 send_message(bot, parse_status(homework[0]))
                 current_timestamp = response.get('current_date')
         except Exception as error:
